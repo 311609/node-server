@@ -1,3 +1,5 @@
+const express = require('express');
+const app = express();
 const readline = require('readline-promise').default;
 const rl = readline.createInterface({
   input: process.stdin,
@@ -63,51 +65,49 @@ function completeTask() {
   });
 }
 
-// Función principal
-async function main() {
-  let exit = false; // Variable para controlar la salida del bucle
+// Ruta para obtener la lista de tareas en formato JSON
+app.get('/tasks', (req, res) => {
+  res.json(tasks);
+});
 
-  console.log('\n--- Lista de Tareas ---');
-  console.log('1. Añadir tarea');
-  console.log('2. Eliminar tarea');
-  console.log('3. Marcar tarea como completada');
-  console.log('4. Salir');
+// Ruta para agregar una nueva tarea
+app.post('/tasks', async (req, res) => {
+  try {
+    const addResult = await addTask();
+    res.json({ message: addResult });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al añadir tarea' });
+  }
+});
 
-  rl.on('line', async (input) => {
-    switch (input) {
-      case '1':
-        try {
-          const addResult = await addTask();
-          console.log(addResult);
-        } catch (error) {
-          console.error('Error al añadir tarea:', error);
-        }
-        break;
-      case '2':
-        removeTask()
-          .then((removeResult) => {
-            console.log(removeResult);
-          })
-          .catch((error) => {
-            console.error('Error al eliminar tarea:', error);
-          });
-        break;
-      case '3':
-        try {
-          const completeResult = await completeTask();
-          console.log(completeResult);
-        } catch (error) {
-          console.error('Error al marcar tarea como completada:', error);
-        }
-        break;
-      case '4':
-        rl.close();
-        break;
-      default:
-        console.log('Opción no válida. Inténtalo de nuevo.');
-    }
-  });
-}
+// Ruta para eliminar una tarea
+app.delete('/tasks/:index', (req, res) => {
+  const index = parseInt(req.params.index);
 
-// Ejecutar el programa principal
-main();
+  if (index >= 0 && index < tasks.length) {
+    tasks.splice(index, 1);
+    res.json({ message: 'Tarea eliminada con éxito.' });
+  } else {
+    res.status(400).json({ error: 'Índice de tarea no válido.' });
+  }
+});
+
+// Ruta para marcar una tarea como completada
+app.put('/tasks/:index/complete', (req, res) => {
+  const index = parseInt(req.params.index);
+
+  if (index >= 0 && index < tasks.length) {
+    tasks[index].state = 'completada';
+    res.json({ message: 'Tarea marcada como completada.' });
+  } else {
+    res.status(400).json({ error: 'Índice de tarea no válido.' });
+  }
+});
+
+// Definir el host y el puerto del servidor
+const host = 'localhost';
+const port = 3000;
+
+// Iniciar el servidor
+app.listen(port, host, () => {
+  console.log(`Servidor en ejecucion`)})
